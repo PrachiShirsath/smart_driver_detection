@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Dashboard Media Smart Break-Timer</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; }
+        body { 
+            background: #0f172a; /* Sleek Cockpit Aesthetic */
+            color: #e2e8f0;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px;
+        }
+        .container { 
+            background: #1e293b; 
+            padding: 35px; 
+            border-radius: 20px; 
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6); 
+            width: 480px; 
+            text-align: center;
+            border: 1px solid #334155;
+        }
+        .hidden { display: none !important; }
+        h2, h3 { color: #f8fafc; margin-top: 0; font-weight: 600; letter-spacing: 0.5px; }
+        p { color: #94a3b8; }
+        
+        input, select, button { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            border: 1px solid #475569; 
+            font-size: 16px; 
+            background: #0f172a;
+            color: white;
+        }
+        input:focus, select:focus {
+            outline: 2px solid #3b82f6;
+            background: #111827;
+        }
+        
+        /* Device Upload Field Deck Styling */
+        .file-upload-btn {
+            display: block;
+            text-align: center;
+            background: #0f172a;
+            border: 2px dashed #3b82f6;
+            padding: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 12px 0;
+            font-weight: bold;
+            color: #3b82f6;
+            transition: all 0.2s;
+        }
+        .file-upload-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+        }
+
+        button { 
+            background: #2563eb; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: all 0.2s ease; 
+        }
+        button:hover { background: #1d4ed8; transform: translateY(-1px); }
+        button:active { transform: translateY(1px); }
+        
+        .timer-display { 
+            font-size: 72px; 
+            font-weight: bold; 
+            color: #10b981; /* Dashboard Radioactive Green */
+            margin: 20px 0; 
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+        .music-list { 
+            text-align: left; 
+            max-height: 140px; 
+            overflow-y: auto; 
+            background: #0f172a; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 1px solid #334155; 
+            margin-bottom: 12px;
+        }
+        .music-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            font-size: 13px; 
+            margin-bottom: 6px; 
+            padding-bottom: 6px; 
+            border-bottom: 1px solid #1e293b; 
+        }
+        .music-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        
+        .track-info {
+            display: flex;
+            flex-direction: column;
+            max-width: 70%;
+        }
+        .track-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+        }
+        .track-type {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-top: 1px;
+        }
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+            width: auto;
+            padding: 4px 10px;
+            margin: 0;
+            font-size: 11px;
+            border-radius: 6px;
+        }
+        .btn-delete:hover { background: #dc2626; }
+
+        .settings-row {
+            display: flex;
+            gap: 12px;
+            margin: 10px 0;
+        }
+        .settings-row div {
+            flex: 1;
+            text-align: left;
+        }
+        .settings-row label {
+            font-size: 12px;
+            color: #94a3b8;
+            display: block;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .settings-row select { margin: 0; }
+        
+        .prompt-box { 
+            background: #1e3a8a; 
+            border: 2px solid #3b82f6; 
+            padding: 22px; 
+            border-radius: 14px; 
+            margin-top: 20px; 
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
+            70% { box-shadow: 0 0 0 12px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .btn-group { display: flex; gap: 10px; }
+        .btn-secondary { background: #475569; }
+        .btn-secondary:hover { background: #334155; }
+        
+        /* Direct Action Stop Override */
+        .btn-danger-deck {
+            background: #ef4444 !important;
+        }
+        .btn-danger-deck:hover {
+            background: #b91c1c !important;
+        }
+
+        .now-playing {
+            color: #3b82f6;
+            font-weight: bold;
+            margin-top: 12px;
+            font-size: 14px;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px dashed rgba(59, 130, 246, 0.3);
+        }
+
+        .media-count-badge {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        /* Video Console Element Panel */
+        .video-panel-wrapper {
+            margin-top: 15px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #475569;
+            line-height: 0;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            max-height: 220px;
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- SETUP/LOGIN SCREEN -->
+        <div id="login-section">
+            <h2>🚗 Center Infotainment Deck</h2>
+            <p>Setup your session parameters & media playlist</p>
+            
+            <input type="text" id="username" placeholder="Enter Driver Name" value="Alex">
+
+            <div class="settings-row">
+                <div>
+                    <label for="timer-duration">Break Interval:</label>
+                    <select id="timer-duration">
+                        <option value="3600" selected>1 Hour (Default)</option>
+                        <option value="1800">30 Minutes</option>
+                        <option value="10">10 Seconds (Quick Test Mode)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="playback-mode">Deck Play Mode:</label>
+                    <select id="playback-mode">
+                        <option value="random" selected>🔀 Shuffled</option>
+                        <option value="sequence">🔁 Sequential</option>
+                    </select>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 20px; font-size: 14px; text-align: left; color:#cbd5e1;">Media Playlist Setup:</h3>
+            <div class="music-list" id="playlist-container"></div>
+            
+            <label class="file-upload-btn">
+                📂 Load Device Files (MP3 / MP4)
+                <input type="file" id="local-file-input" accept="audio/mp3, audio/*, video/mp4, video/*" style="display: none;" onchange="addLocalMediaDevice(event)">
+            </label>
+
+            <button onclick="login()" style="margin-top: 15px;">Start Deck & Drive</button>
+        </div>
+
+        <!-- MAIN ACTIVE DASHBOARD DECK -->
+        <div id="dashboard-section" class="hidden">
+            <h2 id="welcome-msg">System Active</h2>
+            <span id="media-count" class="media-count-badge">Tracks Mounted: 0</span>
+            
+            <div class="timer-display" id="countdown">60:00</div>
+            
+            <div id="audio-status" class="hidden"></div>
+
+            <div id="video-deck-wrapper" class="video-panel-wrapper hidden">
+                <video id="dashboard-video-player" controls preload="auto"></video>
+            </div>
+        </div>
+
+        <!-- CONSOLE ALERTS INTERFACE WINDOW -->
+        <div id="prompt-section" class="prompt-box hidden">
+            <h3 id="alert-title" style="color: #fca5a5; margin-bottom: 5px;">⚠️ Rest Alert Triggered</h3>
+            <p id="prompt-text" style="color: #f1f5f9; font-weight: 500; margin: 5px 0;">Please take a break and stretch your body!</p>
+            <p id="sub-prompt-text" style="color: #cbd5e1; font-size: 15px; margin-bottom: 15px;">Would you like me to play your media tracks now?</p>
+            <div class="btn-group" id="alert-buttons">
+                <button onclick="handleMusicResponse(true)">Yes, Power On</button>
+                <button class="btn-secondary" onclick="handleMusicResponse(false)">No, Dismiss</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="html5-audio" preload="auto" crossorigin="anonymous"></audio>
+
+    <script>
+        let totalSeconds = 3600; 
+        let timerInterval;
+        let userName = "";
+        let currentTrackIndex = 0;
+        let playlist = []; 
+
+        const audioPlayer = document.getElementById('html5-audio');
+        const videoPlayer = document.getElementById('dashboard-video-player');
+        const videoDeckWrapper = document.getElementById('video-deck-wrapper');
+
+        // Initial Setup Viewport Render
+        renderPlaylist();
+
+        // Load local file system objects dynamically
+        function addLocalMediaDevice(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const file = files[0];
+            const objectURL = URL.createObjectURL(file);
+            const isVideo = file.type.startsWith('video/');
+
+            playlist.push({
+                name: file.name,
+                url: objectURL,
+                type: isVideo ? 'video' : 'audio'
+            });
+
+            renderPlaylist();
+            event.target.value = ''; 
+        }
+
+        function removeTrack(index) {
+            if (playlist[index] && playlist[index].url) {
+                URL.revokeObjectURL(playlist[index].url); 
+            }
+            playlist.splice(index, 1);
+            renderPlaylist();
+        }
+
+        function renderPlaylist() {
+            const container = document.getElementById('playlist-container');
+            if (playlist.length === 0) {
+                container.innerHTML = '<p style="text-align:center; font-size:12px; margin:15px 0;">No media tracks loaded. Connect device files above.</p>';
+                return;
+            }
+
+            container.innerHTML = playlist.map((track, idx) => `
+                <div class="music-item">
+                    <div class="track-info">
+                        <span class="track-name" title="${track.name}">${track.name}</span>
+                        <span class="track-type">${track.type === 'video' ? '📺 Video (MP4)' : '🎵 Audio (MP3)'}</span>
+                    </div>
+                    <button class="btn-delete" onclick="removeTrack(${idx})">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        // DASHBOARD INITIALIZATION
+        function login() {
+            userName = document.getElementById('username').value.trim() || "Driver";
+            totalSeconds = parseInt(document.getElementById('timer-duration').value, 10);
+            
+            document.getElementById('welcome-msg').innerText = `👤 Driver: ${userName}`;
+            document.getElementById('media-count').innerText = `Tracks Mounted: ${playlist.length}`;
+            
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('dashboard-section').classList.remove('hidden');
+            
+            updateTimerDisplay();
+            startTimerLoop();
+        }
+
+        // Chrono Clock Countdown Logic
+        function startTimerLoop() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (totalSeconds > 0) {
+                    totalSeconds--;
+                    updateTimerDisplay();
+                } else {
+                    clearInterval(timerInterval);
+                    triggerRestAlert();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            document.getElementById('countdown').innerText = 
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // STAGE 1 ALERT: Reads Initial Breaking Alert Out Loud
+        function triggerRestAlert() {
+            document.getElementById('alert-title').innerText = "⚠️ Rest Alert Triggered";
+            document.getElementById('alert-title').style.color = "#fca5a5";
+            document.getElementById('prompt-text').innerText = "Please take a break and stretch your body!";
+            document.getElementById('sub-prompt-text').innerText = "Would you like me to play your media tracks now?";
+            
+            document.getElementById('alert-buttons').innerHTML = `
+                <button onclick="handleMusicResponse(true)">Yes, Power On</button>
+                <button class="btn-secondary" onclick="handleMusicResponse(false)">No, Dismiss</button>
+            `;
+            
+            document.getElementById('prompt-section').classList.remove('hidden');
+            speakOutLoud(`Rest alert triggered! Driver ${userName}, please take a break and stretch your body. Would you like me to play your media tracks now?`);
+        }
+
+        // STAGE 2 RUNTIME: Loaded instantly as a track fires up to allow immediate termination
+        function loadLivePlaybackControllerPanel() {
+            document.getElementById('alert-title').innerText = "🎵 Infotainment Active";
+            document.getElementById('alert-title').style.color = "#10b981";
+            document.getElementById('prompt-text').innerText = "Media playing in background deck.";
+            document.getElementById('sub-prompt-text').innerText = "You can abort playback at any time to restore the clock.";
+            
+            document.getElementById('alert-buttons').innerHTML = `
+                <button class="btn-danger-deck" onclick="handleAbortPlaybackAction()">🔴 Stop Media</button>
+            `;
+            document.getElementById('prompt-section').classList.remove('hidden');
+        }
+
+        function handleAbortPlaybackAction() {
+            stopVoiceEngine();
+            document.getElementById('prompt-section').classList.add('hidden');
+            resetDashboardDeck();
+        }
+
+        // STAGE 3 CHECKPOINT: Prompts Driver After a Song Ends naturally
+        function triggerSongCheckpointAlert() {
+            killActivePlayers(); 
+            
+            document.getElementById('alert-title').innerText = "🎵 Playlist Checkpoint";
+            document.getElementById('alert-title').style.color = "#60a5fa";
+            document.getElementById('prompt-text').innerText = "Track finished.";
+            document.getElementById('sub-prompt-text').innerText = "Would you like me to continue playing the next track or stop?";
+            
+            document.getElementById('alert-buttons').innerHTML = `
+                <button onclick="handleCheckpointResponse('continue')">Continue Playing</button>
+                <button class="btn-secondary" onclick="handleCheckpointResponse('stop')">Stop Deck</button>
+            `;
+            
+            document.getElementById('prompt-section').classList.remove('hidden');
+            speakOutLoud("Track finished. Would you like me to continue or stop?");
+        }
+
+        function handleCheckpointResponse(choice) {
+            stopVoiceEngine();
+            document.getElementById('prompt-section').classList.add('hidden');
+
+            if (choice === 'continue') {
+                advancePlaylistIndex();
+                executeMediaPlayback();
+            } else {
+                resetDashboardDeck();
+            }
+        }
+
+        function handleMusicResponse(shouldPlay) {
+            stopVoiceEngine();
+            document.getElementById('prompt-section').classList.add('hidden');
+            
+            if (!shouldPlay) {
+                resetDashboardDeck();
+                return;
+            }
+
+            if (playlist.length === 0) {
+                const status = document.getElementById('audio-status');
+                status.className = "now-playing";
+                status.innerText = "⚠️ No media tracks mounted in playlist deck!";
+                return;
+            }
+
+            const playMode = document.getElementById('playback-mode').value;
+            if (playMode === 'random') {
+                currentTrackIndex = Math.floor(Math.random() * playlist.length);
+            } else {
+                currentTrackIndex = 0;
+            }
+
+            executeMediaPlayback();
+        }
+
+        function executeMediaPlayback() {
+            killActivePlayers();
+
+            const track = playlist[currentTrackIndex];
+            const statusBox = document.getElementById('audio-status');
+            statusBox.className = "now-playing";
+            statusBox.innerText = `▶️ Playing: ${track.name}`;
+
+            // Modified: Load the live Stop panel directly onto the screen as playback starts
+            loadLivePlaybackControllerPanel();
+
+            if (track.type === 'video') {
+                videoDeckWrapper.classList.remove('hidden');
+                videoPlayer.src = track.url;
+                videoPlayer.play().catch(err => {
+                    statusBox.innerText = `⚠️ Use the visual panel deck keys below to override browser blocks.`;
+                    console.error(err);
+                });
+            } else {
+                audioPlayer.src = track.url;
+                audioPlayer.play().catch(err => {
+                    statusBox.innerText = `⚠️ Autoplay interlocked. Click standard console keys to release pipeline.`;
+                    console.error(err);
+                });
+            }
+        }
+
+        function advancePlaylistIndex() {
+            if (playlist.length === 0) return;
+            const playMode = document.getElementById('playback-mode').value;
+            if (playMode === 'random') {
+                currentTrackIndex = Math.floor(Math.random() * playlist.length);
+            } else {
+                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            }
+        }
+
+        function killActivePlayers() {
+            audioPlayer.pause();
+            audioPlayer.src = "";
+            videoPlayer.pause();
+            videoPlayer.src = "";
+            videoDeckWrapper.classList.add('hidden');
+        }
+
+        function handleTrackEnded() {
+            triggerSongCheckpointAlert();
+        }
+
+        audioPlayer.addEventListener('ended', handleTrackEnded);
+        videoPlayer.addEventListener('ended', handleTrackEnded);
+
+        function resetDashboardDeck() {
+            killActivePlayers();
+            document.getElementById('audio-status').className = "hidden";
+            totalSeconds = parseInt(document.getElementById('timer-duration').value, 10);
+            updateTimerDisplay();
+            startTimerLoop();
+        }
+
+        // Shared Voice Engine Synthesis Wrapper
+        function speakOutLoud(phrase) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); 
+                const utterance = new SpeechSynthesisUtterance(phrase);
+                utterance.rate = 1.0; 
+                utterance.pitch = 1.0; 
+                utterance.volume = 1.0; 
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function stopVoiceEngine() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        }
+    </script>
+</body>
+</html>

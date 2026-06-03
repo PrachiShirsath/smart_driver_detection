@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Telematics Risk Predictor</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+    background:
+    radial-gradient(circle at top left,#1e3a8a 0%,transparent 30%),
+    radial-gradient(circle at bottom right,#0f766e 0%,transparent 30%),
+    #020617;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:white;
+    padding:20px;
+}
+
+.dashboard{
+    width:1000px;
+    display:grid;
+    grid-template-columns:350px 1fr;
+    gap:25px;
+}
+
+.panel{
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(20px);
+    border-radius:25px;
+    padding:25px;
+    box-shadow:0 15px 40px rgba(0,0,0,0.4);
+}
+
+h1{
+    font-size:30px;
+    margin-bottom:10px;
+}
+
+.subtitle{
+    color:#94a3b8;
+    margin-bottom:25px;
+    font-size:14px;
+    line-height:1.7;
+}
+
+.input-group{
+    margin-bottom:20px;
+}
+
+label{
+    display:block;
+    font-size:12px;
+    margin-bottom:8px;
+    color:#94a3b8;
+    text-transform:uppercase;
+    letter-spacing:1px;
+}
+
+select,input{
+    width:100%;
+    padding:15px;
+    border-radius:14px;
+    border:none;
+    outline:none;
+    background:#0f172a;
+    color:white;
+    border:1px solid #334155;
+    font-size:15px;
+}
+
+select:focus,
+input:focus{
+    border-color:#3b82f6;
+    box-shadow:0 0 10px rgba(59,130,246,0.4);
+}
+
+button{
+    width:100%;
+    padding:16px;
+    border:none;
+    border-radius:16px;
+    background:linear-gradient(135deg,#2563eb,#06b6d4);
+    color:white;
+    font-size:16px;
+    font-weight:600;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{
+    transform:translateY(-3px);
+}
+
+.telemetry-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    margin-top:25px;
+}
+
+.card{
+    background:#0f172a;
+    border-radius:20px;
+    padding:22px;
+    border:1px solid #1e293b;
+}
+
+.card h3{
+    color:#94a3b8;
+    font-size:13px;
+    margin-bottom:12px;
+}
+
+.card .value{
+    font-size:32px;
+    font-weight:700;
+}
+
+.track{
+    height:18px;
+    background:#1e293b;
+    border-radius:20px;
+    overflow:hidden;
+    margin-top:30px;
+}
+
+.bar{
+    height:100%;
+    width:0%;
+    transition:0.3s;
+    background:linear-gradient(
+        90deg,
+        #22c55e,
+        #facc15,
+        #ef4444
+    );
+}
+
+.live{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:14px;
+    color:#4ade80;
+}
+
+.dot{
+    width:10px;
+    height:10px;
+    background:#4ade80;
+    border-radius:50%;
+    animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+    0%{transform:scale(1);}
+    50%{transform:scale(1.5);}
+    100%{transform:scale(1);}
+}
+
+/* MODAL */
+
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.75);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    visibility:hidden;
+    opacity:0;
+    transition:0.4s;
+}
+
+.modal.show{
+    visibility:visible;
+    opacity:1;
+}
+
+.modal-box{
+    width:480px;
+    background:#0f172a;
+    border:1px solid #334155;
+    border-radius:28px;
+    padding:35px;
+    text-align:center;
+    transform:translateY(20px);
+    transition:0.4s;
+}
+
+.modal.show .modal-box{
+    transform:translateY(0);
+}
+
+.alert{
+    width:100px;
+    height:100px;
+    margin:auto;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:42px;
+    font-weight:700;
+    margin-bottom:20px;
+}
+
+.low{
+    background:#14532d;
+    color:#4ade80;
+}
+
+.medium{
+    background:#78350f;
+    color:#facc15;
+}
+
+.high{
+    background:#7f1d1d;
+    color:#f87171;
+}
+
+.risk-score{
+    font-size:70px;
+    font-weight:700;
+    margin:15px 0;
+}
+
+.summary{
+    color:#cbd5e1;
+    line-height:1.8;
+    margin-top:20px;
+}
+
+@media(max-width:900px){
+
+.dashboard{
+    grid-template-columns:1fr;
+}
+
+.telemetry-grid{
+    grid-template-columns:1fr;
+}
+
+.modal-box{
+    width:92%;
+}
+
+}
+
+</style>
+</head>
+<body>
+
+<div class="dashboard">
+
+    <!-- LEFT PANEL -->
+
+    <div class="panel">
+
+        <h1>🚗 AI Risk Predictor</h1>
+
+        <div class="subtitle">
+            Smart telematics system based on
+            vehicle type, speed and road location.
+        </div>
+
+        <div class="input-group">
+
+            <label>Vehicle Type</label>
+
+            <select id="carType">
+
+                <option value="1.0">
+                    Compact Sedan
+                </option>
+
+                <option value="1.2">
+                    SUV
+                </option>
+
+                <option value="1.4">
+                    Sports Car
+                </option>
+
+                <option value="1.6">
+                    Cargo Truck
+                </option>
+
+            </select>
+
+        </div>
+
+        <div class="input-group">
+
+            <label>Vehicle Speed (km/h)</label>
+
+            <input type="number"
+                   id="speed"
+                   value="80">
+
+        </div>
+
+        <div class="input-group">
+
+            <label>Driving Location</label>
+
+            <select id="location">
+
+                <option value="1.0">
+                    Highway
+                </option>
+
+                <option value="1.2">
+                    City
+                </option>
+
+                <option value="1.4">
+                    Urban
+                </option>
+
+                <option value="1.6">
+                    Mountain
+                </option>
+
+            </select>
+
+        </div>
+
+        <button onclick="startSimulation()">
+            Start AI Analysis
+        </button>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+
+    <div class="panel">
+
+        <h2>📡 Live Telemetry</h2>
+
+        <div class="telemetry-grid">
+
+            <div class="card">
+
+                <h3>Vehicle Speed</h3>
+
+                <div class="value"
+                     id="speedView">
+
+                    0 km/h
+
+                </div>
+
+            </div>
+
+            <div class="card">
+
+                <h3>Risk Index</h3>
+
+                <div class="value"
+                     id="riskView">
+
+                    0%
+
+                </div>
+
+            </div>
+
+            <div class="card">
+
+                <h3>Driver Status</h3>
+
+                <div class="value"
+                     id="statusView">
+
+                    SAFE
+
+                </div>
+
+            </div>
+
+            <div class="card">
+
+                <h3>Location</h3>
+
+                <div class="value"
+                     id="locationView">
+
+                    ---
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="track">
+
+            <div class="bar"
+                 id="progressBar">
+
+            </div>
+
+        </div>
+
+        <div class="live">
+
+            <div class="dot"></div>
+
+            AI telematics engine running...
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- RESULT MODAL -->
+
+<div class="modal"
+     id="modal">
+
+    <div class="modal-box">
+
+        <div class="alert"
+             id="alertIcon">
+
+            !
+
+        </div>
+
+        <h2>RISK ANALYSIS COMPLETE</h2>
+
+        <div class="risk-score"
+             id="finalScore">
+
+            0%
+
+        </div>
+
+        <div class="summary"
+             id="summary">
+
+        </div>
+
+        <button onclick="location.reload()">
+
+            Restart Simulation
+
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+
+function calculateRisk(speed,carType,location){
+
+    // BASE SPEED RISK
+
+    let risk = 0;
+
+    if(speed <= 40){
+
+        risk = 10;
+    }
+
+    else if(speed <= 70){
+
+        risk = 25;
+    }
+
+    else if(speed <= 100){
+
+        risk = 50;
+    }
+
+    else if(speed <= 130){
+
+        risk = 75;
+    }
+
+    else{
+
+        risk = 95;
+    }
+
+    // CAR TYPE EFFECT
+
+    risk *= parseFloat(carType);
+
+    // LOCATION EFFECT
+
+    risk *= parseFloat(location);
+
+    // LIMIT TO 100
+
+    risk = Math.min(100,Math.round(risk));
+
+    return risk;
+}
+
+function getRiskData(score){
+
+    if(score < 30){
+
+        return {
+
+            level:"LOW",
+            status:"SAFE",
+            className:"low"
+
+        };
+    }
+
+    else if(score < 70){
+
+        return {
+
+            level:"MEDIUM",
+            status:"WARNING",
+            className:"medium"
+
+        };
+    }
+
+    else{
+
+        return {
+
+            level:"HIGH",
+            status:"DANGER",
+            className:"high"
+
+        };
+    }
+}
+
+function startSimulation(){
+
+    let progress = 0;
+
+    const speed =
+        parseInt(
+            document.getElementById("speed").value
+        );
+
+    const carType =
+        document.getElementById("carType").value;
+
+    const location =
+        document.getElementById("location").value;
+
+    const locationText =
+        document.getElementById("location")
+        .selectedOptions[0].text;
+
+    document.getElementById("locationView")
+    .innerText = locationText;
+
+    const finalRisk =
+        calculateRisk(speed,carType,location);
+
+    const riskData =
+        getRiskData(finalRisk);
+
+    const interval = setInterval(()=>{
+
+        progress += 2;
+
+        document.getElementById("progressBar")
+        .style.width = progress + "%";
+
+        // LIVE SPEED
+
+        const currentSpeed =
+            Math.floor((speed * progress)/100);
+
+        document.getElementById("speedView")
+        .innerText =
+            currentSpeed + " km/h";
+
+        // LIVE RISK
+
+        const liveRisk =
+            Math.floor((finalRisk * progress)/100);
+
+        document.getElementById("riskView")
+        .innerText =
+            liveRisk + "%";
+
+        // STATUS
+
+        document.getElementById("statusView")
+        .innerText =
+            riskData.status;
+
+        // COLORS
+
+        if(liveRisk < 30){
+
+            document.getElementById("riskView")
+            .style.color = "#4ade80";
+        }
+
+        else if(liveRisk < 70){
+
+            document.getElementById("riskView")
+            .style.color = "#facc15";
+        }
+
+        else{
+
+            document.getElementById("riskView")
+            .style.color = "#f87171";
+        }
+
+        // FINISH
+
+        if(progress >= 100){
+
+            clearInterval(interval);
+
+            document.getElementById("modal")
+            .classList.add("show");
+
+            document.getElementById("alertIcon")
+            .classList.add(riskData.className);
+
+            document.getElementById("finalScore")
+            .innerText =
+                finalRisk + "%";
+
+            document.getElementById("summary")
+            .innerHTML = `
+
+                <b>${riskData.level} RISK DETECTED</b>
+                <br><br>
+
+                AI telematics engine analyzed:
+
+                <br><br>
+
+                • Vehicle Speed: ${speed} km/h<br>
+                • Vehicle Type Multiplier: ${carType}<br>
+                • Location Risk Multiplier: ${location}<br>
+                • Final Predicted Risk Index: ${finalRisk}%<br>
+
+            `;
+        }
+
+    },80);
+}
+
+</script>
+
+</body>
+</html>
