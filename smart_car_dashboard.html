@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartDrive AI Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c12;
+    --panel: #0f1320;
+    --panel2: #141926;
+    --border: #1e2a3a;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --warn: #ffb800;
+    --danger: #ff3d3d;
+    --text: #e8f4f8;
+    --muted: #5a7a8a;
+    --glow: rgba(0,212,255,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .dashboard {
+    display: grid;
+    grid-template-rows: 56px 1fr;
+    grid-template-columns: 1fr;
+    min-height: 100vh;
+  }
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  .header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 3px;
+  }
+  .logo span { color: var(--accent2); }
+  .header-stats {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  .hstat {
+    display: flex; flex-direction: column; align-items: center;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .hstat-val { font-size: 18px; color: var(--accent); }
+  .hstat-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+  .live-badge {
+    background: rgba(0,255,157,0.15);
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    animation: pulse-badge 2s infinite;
+  }
+  @keyframes pulse-badge { 0%,100%{opacity:1} 50%{opacity:0.6} }
+  
+
+  /* NAV TABS */
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--panel);
+    padding: 8px 16px 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+    letter-spacing: 0.5px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab-icon { font-size: 16px; }
+
+  /* MAIN CONTENT */
+  .main { padding: 16px; }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .card-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* NAVIGATION TAB */
+  .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .input-group label { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 5px; display: block; }
+  .input-group input, .input-group select {
+    width: 100%;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 14px;
+    padding: 9px 12px;
+    outline: none;
+  }
+  .input-group input:focus, .input-group select:focus { border-color: var(--accent); }
+  .btn-primary {
+    background: linear-gradient(135deg, #00d4ff22, #00d4ff11);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    color: var(--accent);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+  .btn-primary:hover { background: rgba(0,212,255,0.2); box-shadow: 0 0 16px rgba(0,212,255,0.3); }
+  .map-container {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    margin-top: 12px;
+  }
+  .map-container iframe { width: 100%; height: 340px; border: none; display: block; }
+  .curve-alert {
+    background: rgba(255,184,0,0.1);
+    border: 1px solid var(--warn);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--warn);
+  }
+  .curve-alert-icon { font-size: 20px; }
+ 
+  #map { width: 100%; height: 340px; border-radius: 12px; }
+  .nav-overlay {
+    position: absolute; bottom: 20px; left: 20px; z-index: 1000;
+    background: rgba(15, 19, 32, 0.9); border: 1px solid #1e2a3a;
+    padding: 16px; border-radius: 12px; color: #e8f4f8;
+  }
+  .sharp-curve-badge {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    background: #ff3d3d; color: white; padding: 6px 16px;
+    border-radius: 20px; font-weight: bold; z-index: 1000; display: none;
+  }
+
+  /* MUSIC TAB */
+  .music-setup { display: grid; gap: 12px; }
+  .song-input-area {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .song-input-area textarea {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    min-height: 60px;
+  }
+  .timer-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
+  .music-player {
+    background: linear-gradient(135deg, var(--panel2), #0d1825);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px;
+    display: none;
+  }
+  .music-player.visible { display: block; }
+  .song-name { font-size: 18px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+  .song-artist { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .progress-bar-wrap {
+    background: var(--border);
+    border-radius: 3px;
+    height: 4px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    position: relative;
+  }
+  .progress-fill {
+    background: var(--accent);
+    border-radius: 3px;
+    height: 4px;
+    width: 35%;
+    transition: width 0.3s;
+  }
+  .player-controls { display: flex; justify-content: center; gap: 20px; align-items: center; }
+  .ctrl-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 22px;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .ctrl-btn:hover { color: var(--text); }
+  .ctrl-btn.main { color: var(--accent); font-size: 32px; }
+  .ctrl-btn.main:hover { color: var(--text); }
+  .bored-modal {
+    background: rgba(0,212,255,0.08);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    display: none;
+  }
+  .bored-modal.visible { display: block; }
+  .bored-msg { font-size: 16px; margin-bottom: 14px; color: var(--accent); }
+  .bored-actions { display: flex; gap: 10px; justify-content: center; }
+  .btn-yes, .btn-no {
+    padding: 8px 24px;
+    border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.2s;
+  }
+  .btn-yes { background: rgba(0,255,157,0.15); border-color: var(--accent2); color: var(--accent2); }
+  .btn-no { background: rgba(255,61,61,0.1); border-color: var(--danger); color: var(--danger); }
+  .timer-display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 32px;
+    color: var(--accent2);
+    text-align: center;
+    margin: 10px 0;
+  }
+
+  /* RISK TAB */
+  .risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .risk-meter {
+    margin: 16px 0;
+    position: relative;
+  }
+  .risk-bar-bg {
+    background: var(--panel2);
+    border-radius: 6px;
+    height: 20px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .risk-bar-fill {
+    height: 20px;
+    border-radius: 6px;
+    transition: width 0.8s cubic-bezier(0.4,0,0.2,1), background 0.8s;
+    position: relative;
+  }
+  .risk-label {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .risk-score {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 48px;
+    font-weight: 700;
+    text-align: center;
+    transition: color 0.5s;
+    line-height: 1;
+  }
+  .risk-desc { text-align: center; font-size: 13px; color: var(--muted); margin-top: 4px; margin-bottom: 16px; }
+  .risk-factors { display: grid; gap: 8px; }
+  .risk-factor {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px;
+    background: var(--panel2);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px;
+    border-radius: 10px; letter-spacing: 0.5px;
+  }
+  .badge-low { background: rgba(0,255,157,0.15); color: var(--accent2); }
+  .badge-med { background: rgba(255,184,0,0.15); color: var(--warn); }
+  .badge-high { background: rgba(255,61,61,0.15); color: var(--danger); }
+
+  /* DROWSINESS TAB */
+  .camera-feed {
+    background: #05080f;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 12px;
+  }
+  #videoFeed {
+    width: 100%;
+    max-height: 280px;
+    display: block;
+    object-fit: cover;
+  }
+  .camera-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+  }
+  .face-box {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 140px; height: 160px;
+    border: 2px solid var(--accent2);
+    border-radius: 8px;
+    opacity: 0.7;
+  }
+  .face-box::before, .face-box::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    border-color: var(--accent);
+    border-style: solid;
+  }
+  .face-box::before { top: -2px; left: -2px; border-width: 3px 0 0 3px; }
+  .face-box::after { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; }
+  .camera-status {
+    position: absolute;
+    top: 10px; left: 10px;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(10,12,18,0.85);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent2);
+    animation: blink 1.5s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .eye-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+  .eye-stat {
+    background: var(--panel2);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+  .eye-stat-val { font-family: 'Share Tech Mono', monospace; font-size: 20px; color: var(--accent); }
+  .eye-stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .drowsy-alert {
+    background: rgba(255,61,61,0.1);
+    border: 1px solid var(--danger);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    display: none;
+  }
+  .drowsy-alert.visible { display: block; }
+  .drowsy-alert h3 { color: var(--danger); font-size: 16px; margin-bottom: 6px; }
+  .drowsy-alert p { font-size: 13px; color: var(--muted); }
+  .camera-no-support {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* AI CHAT TAB */
+  .chat-area {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    height: 360px;
+    overflow-y: auto;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .chat-area::-webkit-scrollbar { width: 4px; }
+  .chat-area::-webkit-scrollbar-track { background: var(--panel2); }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .msg.user { align-self: flex-end; background: rgba(0,212,255,0.12); border: 1px solid rgba(0,212,255,0.3); }
+  .msg.ai { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); }
+  .msg.ai .msg-name { font-size: 10px; color: var(--accent); letter-spacing: 1px; font-weight: 600; margin-bottom: 4px; }
+  .chat-input-row { display: flex; gap: 8px; }
+  .chat-input {
+    flex: 1;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-send-btn {
+    background: rgba(0,212,255,0.15);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0 16px;
+    transition: all 0.2s;
+  }
+  .chat-send-btn:hover { background: rgba(0,212,255,0.3); }
+  .quick-prompts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .qp-btn {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Exo 2', sans-serif;
+  }
+  .qp-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* TYPING INDICATOR */
+  .typing { display: flex; gap: 5px; align-items: center; padding: 8px 14px; }
+  .typing span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--muted); animation: bounce 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  .section-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) {
+    .nav-grid, .risk-grid, .timer-row, .section-2col { grid-template-columns: 1fr; }
+    .eye-stats { grid-template-columns: 1fr 1fr; }
+    .header-stats { gap: 14px; }
+    .hstat-val { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="dashboard">
+  <header class="header">
+    <div class="logo">SMART<span>DRIVE</span></div>
+    <div class="header-stats">
+      <div class="hstat">
+        <div class="hstat-val" id="speedDisp">62</div>
+        <div class="hstat-label">KM/H</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val" id="tempDisp">36°C</div>
+        <div class="hstat-label">OUTSIDE</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val" id="timeDisp">--:--</div>
+        <div class="hstat-label">TIME</div>
+      </div>
+      <div class="live-badge">● LIVE</div>
+    </div>
+  </header>
+
+  <div>
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('navigation')">
+        <span class="tab-icon">🗺️</span> Navigation
+      </button>
+      <button class="tab-btn" onclick="switchTab('music')">
+        <span class="tab-icon">🎵</span> Music
+      </button>
+      <button class="tab-btn" onclick="switchTab('risk')">
+        <span class="tab-icon">⚠️</span> Risk
+      </button>
+      <button class="tab-btn" onclick="switchTab('drowsiness')">
+        <span class="tab-icon">👁️</span> Drowsiness
+      </button>
+      <button class="tab-btn" onclick="switchTab('chat')">
+        <span class="tab-icon">🤖</span> AI Assistant
+      </button>
+    </nav>
+
+    <div class="main">
+
+      <!-- NAVIGATION TAB -->
+      <div class="tab-pane active" id="tab-navigation">
+        <div class="nav-grid">
+          <div class="input-group">
+            <label>SOURCE</label>
+            <input type="text" id="sourceInput" placeholder="e.g. Mumbai" value="Mumbai">
+          </div>
+          <div class="input-group">
+            <label>DESTINATION</label>
+            <input type="text" id="destInput" placeholder="e.g. Pune">
+          </div>
+        </div>
+        <button class="btn-primary" onclick="loadMap()">🚗 START NAVIGATION</button>
+
+        <div class="curve-alert" id="curveAlert" style="display:none;">
+          <span class="curve-alert-icon">⚠️</span>
+          <div>
+            <strong>SHARP CURVE AHEAD</strong> — Ghat/Blind turn detected on this route!
+            <div id="alertSpeakBtn" style="margin-top:6px;">
+              <button onclick="speakCurveAlert()" style="background:rgba(255,184,0,0.15);border:1px solid #ffb800;color:#ffb800;padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;">🔊 Speak Alert</button>
+            </div>
+          </div>
+        </div>
+
+      
+          <div class="map-container" id="mapContainer" style="display:none;">
+            <div id="map" style="width: 100%; height: 340px;"></div>
+
+        </div>
+      </div>
+
+      <!-- MUSIC TAB -->
+      <div class="tab-pane" id="tab-music">
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-title"><span class="dot"></span>SONG PLAYLIST</div>
+          <div class="song-input-area">
+            <label style="font-size:11px;color:var(--muted);letter-spacing:1px;display:block;margin-bottom:6px;">ADD YOUR SONGS (one per line)</label>
+            <textarea id="songList" placeholder="Shape of You - Ed Sheeran&#10;Blinding Lights - The Weeknd&#10;Kesariya - Arijit Singh&#10;Tum Hi Ho - Arijit Singh">Shape of You - Ed Sheeran
+Blinding Lights - The Weeknd
+Kesariya - Arijit Singh
+Tum Hi Ho - Arijit Singh</textarea>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-title"><span class="dot"></span>BOREDOM TIMER</div>
+          <div class="timer-row">
+            <div class="input-group">
+              <label>SET TIMER (minutes)</label>
+              <input type="number" id="timerMins" value="30" min="1" max="120">
+            </div>
+            <button class="btn-primary" onclick="startBoredTimer()" style="height:40px;">⏱ START TIMER</button>
+          </div>
+          <div class="timer-display" id="timerDisplay">30:00</div>
+          <div style="text-align:center;font-size:11px;color:var(--muted);">When timer ends, you'll be asked if you want music</div>
+        </div>
+
+        <div class="bored-modal" id="boredModal">
+          <div style="font-size:28px;margin-bottom:8px;">🎵</div>
+          <div class="bored-msg">You've been driving for a while...<br><strong>Are you bored? Want me to play music?</strong></div>
+          <div class="bored-actions">
+            <button class="btn-yes" onclick="startMusic()">✓ YES PLEASE</button>
+            <button class="btn-no" onclick="dismissBored()">✗ NOT NOW</button>
+          </div>
+        </div>
+
+        <div class="music-player" id="musicPlayer">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div class="song-name" id="currentSong">Shape of You</div>
+              <div class="song-artist" id="currentArtist">Ed Sheeran</div>
+            </div>
+            <div style="font-size:24px;">🎵</div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:12px;">
+            <span id="currentTime">1:12</span><span id="totalTime">3:53</span>
+          </div>
+          <div class="player-controls">
+            <button class="ctrl-btn" onclick="prevSong()">⏮</button>
+            <button class="ctrl-btn main" id="playBtn" onclick="togglePlay()">⏸</button>
+            <button class="ctrl-btn" onclick="nextSong()">⏭</button>
+            <button class="ctrl-btn" onclick="speakSongName()">🔊</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RISK TAB -->
+      <div class="tab-pane" id="tab-risk">
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-title"><span class="dot"></span>VEHICLE DETAILS</div>
+          <div class="risk-grid">
+            <div class="input-group">
+              <label>CAR TYPE</label>
+              <select id="carType" onchange="calcRisk()">
+                <option value="sedan">Sedan</option>
+                <option value="suv">SUV</option>
+                <option value="hatchback">Hatchback</option>
+                <option value="truck">Truck / Pickup</option>
+                <option value="sports">Sports Car</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>LOCATION TYPE</label>
+              <select id="locType" onchange="calcRisk()">
+                <option value="highway">Highway</option>
+                <option value="city">City Road</option>
+                <option value="ghat">Ghat / Mountain</option>
+                <option value="rain">Rain / Wet Road</option>
+                <option value="night">Night Drive</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>CURRENT SPEED (KM/H)</label>
+              <input type="number" id="carSpeed" value="62" min="0" max="200" oninput="calcRisk(); document.getElementById('speedDisp').textContent=this.value">
+            </div>
+            <div class="input-group">
+              <label>WEATHER</label>
+              <select id="weatherType" onchange="calcRisk()">
+                <option value="clear">Clear</option>
+                <option value="rain">Rain</option>
+                <option value="fog">Fog</option>
+                <option value="night">Night</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span>PREDICTED RISK FACTOR</div>
+          <div class="risk-label"><span>SAFE</span><span>MODERATE</span><span>HIGH</span><span>CRITICAL</span></div>
+          <div class="risk-bar-bg"><div class="risk-bar-fill" id="riskBar" style="width:40%;background:#00ff9d;"></div></div>
+          <div style="text-align:center;margin-top:16px;">
+            <div class="risk-score" id="riskScore" style="color:#00ff9d;">40</div>
+            <div class="risk-desc" id="riskDesc">Low Risk — Drive Safely</div>
+          </div>
+          <div class="risk-factors" id="riskFactors"></div>
+        </div>
+      </div>
+
+      <!-- DROWSINESS TAB -->
+      <div class="tab-pane" id="tab-drowsiness">
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-title"><span class="dot"></span>LIVE DROWSINESS DETECTION</div>
+          <div class="camera-feed">
+            <video id="videoFeed" autoplay muted playsinline></video>
+            <canvas id="drowsCanvas" style="display:none;"></canvas>
+            <div class="camera-overlay">
+              <div class="face-box" id="faceBox"></div>
+              <div class="camera-status">
+                <div class="status-dot" id="camStatusDot"></div>
+                <span id="camStatusText">CAMERA ACTIVE</span>
+              </div>
+            </div>
+            <div class="camera-no-support" id="camNoSupport" style="display:none;">
+              📷 Camera not available or permission denied.<br>Grant camera access and reload.
+            </div>
+          </div>
+
+          <div class="eye-stats">
+            <div class="eye-stat">
+              <div class="eye-stat-val" id="blinkRate">14</div>
+              <div class="eye-stat-label">BLINKS/MIN</div>
+            </div>
+            <div class="eye-stat">
+              <div class="eye-stat-val" id="eyeOpen">92%</div>
+              <div class="eye-stat-label">EYE OPEN</div>
+            </div>
+            <div class="eye-stat">
+              <div class="eye-stat-val" id="alertLevel" style="color:var(--accent2);">ALERT</div>
+              <div class="eye-stat-label">STATUS</div>
+            </div>
+          </div>
+
+          <div class="drowsy-alert" id="drowsyAlert">
+            <h3>😴 DROWSINESS DETECTED!</h3>
+            <p>You appear to be sleepy. Please take a break at the nearest safe spot.</p>
+            <button onclick="speakDrowsy()" style="margin-top:10px;background:rgba(255,61,61,0.15);border:1px solid var(--danger);color:var(--danger);padding:6px 16px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;">🔊 Speak Alert</button>
+          </div>
+
+          <button class="btn-primary" style="margin-top:10px;" onclick="toggleCamera()">📷 START / STOP CAMERA</button>
+        </div>
+      </div>
+
+      <!-- AI CHAT TAB -->
+      <div class="tab-pane" id="tab-chat">
+        <div class="quick-prompts">
+          <button class="qp-btn" onclick="sendQuick('Weather in Pune today')">🌤 Weather Pune</button>
+          <button class="qp-btn" onclick="sendQuick('Weather in Mumbai today')">🌧 Weather Mumbai</button>
+          <button class="qp-btn" onclick="sendQuick('Plan a 3 day trip to Kashmir')">🏔 Kashmir Trip</button>
+          <button class="qp-btn" onclick="sendQuick('Best cafes in Mumbai')">☕ Best Cafes Mumbai</button>
+          <button class="qp-btn" onclick="sendQuick('Best route from Mumbai to Pune avoiding ghat curves')">🛣 Mumbai-Pune Route</button>
+          <button class="qp-btn" onclick="sendQuick('Top hill stations near Mumbai')">⛰ Hill Stations</button>
+        </div>
+        <div class="chat-area" id="chatArea"></div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chatInput" placeholder="Ask anything — weather, trips, places, directions..." onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="chat-send-btn" onclick="sendChat()">➤</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// CLOCK
+function updateClock() {
+  const now = new Date();
+  document.getElementById('timeDisp').textContent =
+    now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+}
+updateClock(); setInterval(updateClock, 1000);
+
+// TABS
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ---- NAVIGATION ----
+let map, carMarker, animationInterval;
+
+function loadMap() {
+    const src = document.getElementById('sourceInput').value.trim();
+    const dst = document.getElementById('destInput').value.trim();
+    if (!src || !dst) return;
+
+    document.getElementById('mapContainer').style.display = 'block';
+
+    // 1. Initialize Leaflet Map
+    if (!map) {
+        map = L.map('map').setView([19.0760, 72.8777], 10); // Starts at Mumbai
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+    }
+
+    // 2. Add Car Marker
+    if (carMarker) map.removeLayer(carMarker);
+    carMarker = L.marker([19.0760, 72.8777]).addTo(map).bindPopup("Your Car");
+
+    // 3. Start Animation and Curve Detection
+    startMovement();
+}
+
+function startMovement() {
+    if (animationInterval) clearInterval(animationInterval);
+    let lat = 19.0760, lng = 72.8777;
+    
+    animationInterval = setInterval(() => {
+        lat += 0.005; lng += 0.008; // Simulate moving towards Pune
+        carMarker.setLatLng([lat, lng]);
+        map.setView([lat, lng]);
+
+        // Logic for "Sharp Curve" Detection
+        // Example condition: Trigger at a specific coordinate
+        if (lat > 19.15 && lat < 19.16) {
+            document.getElementById('curveAlert').style.display = 'flex';
+            speak("Warning! Sharp curve ahead. Please slow down.");
+            clearInterval(animationInterval); // Stop after alert for safety
+        }
+    }, 1000);
+}
+// ---- MUSIC ----
+let songs = [];
+let currentIdx = 0;
+let isPlaying = false;
+let timerInterval = null;
+let timerRemaining = 0;
+let progressInterval = null;
+let progressPct = 35;
+
+function getSongs() {
+  const raw = document.getElementById('songList').value.trim();
+  return raw.split('\n').filter(s => s.trim()).map(s => {
+    const parts = s.split(' - ');
+    return { name: parts[0]?.trim() || s, artist: parts[1]?.trim() || 'Unknown' };
+  });
+}
+
+function startMusic() {
+  songs = getSongs();
+  if (!songs.length) return;
+  document.getElementById('boredModal').classList.remove('visible');
+  currentIdx = 0;
+  loadSong();
+  isPlaying = true;
+  document.getElementById('musicPlayer').classList.add('visible');
+  document.getElementById('playBtn').textContent = '⏸';
+  speak('Now playing ' + songs[0].name + ' by ' + songs[0].artist);
+  startProgressSim();
+}
+
+function loadSong() {
+  if (!songs.length) return;
+  const s = songs[currentIdx % songs.length];
+  document.getElementById('currentSong').textContent = s.name;
+  document.getElementById('currentArtist').textContent = s.artist;
+}
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  document.getElementById('playBtn').textContent = isPlaying ? '⏸' : '▶';
+  if (isPlaying) { startProgressSim(); speak('Resuming ' + songs[currentIdx % songs.length]?.name); }
+  else { stopProgressSim(); speak('Music paused'); }
+}
+function nextSong() { currentIdx++; loadSong(); speak('Next: ' + songs[currentIdx % songs.length]?.name); resetProgress(); }
+function prevSong() { currentIdx = Math.max(0, currentIdx - 1); loadSong(); speak('Previous: ' + songs[currentIdx % songs.length]?.name); resetProgress(); }
+function speakSongName() { const s = songs[currentIdx % songs.length]; if(s) speak('Currently playing ' + s.name + ' by ' + s.artist); }
+
+function resetProgress() { progressPct = 0; document.getElementById('progressFill').style.width = '0%'; }
+function startProgressSim() {
+  stopProgressSim();
+  progressInterval = setInterval(() => {
+    progressPct = Math.min(100, progressPct + 0.3);
+    document.getElementById('progressFill').style.width = progressPct + '%';
+    if (progressPct >= 100) { progressPct = 0; currentIdx++; loadSong(); }
+  }, 300);
+}
+function stopProgressSim() { if (progressInterval) clearInterval(progressInterval); }
+
+function startBoredTimer() {
+  const mins = parseInt(document.getElementById('timerMins').value) || 30;
+  timerRemaining = mins * 60;
+  if (timerInterval) clearInterval(timerInterval);
+  document.getElementById('boredModal').classList.remove('visible');
+  timerInterval = setInterval(() => {
+    timerRemaining--;
+    const m = Math.floor(timerRemaining / 60).toString().padStart(2,'0');
+    const s = (timerRemaining % 60).toString().padStart(2,'0');
+    document.getElementById('timerDisplay').textContent = m + ':' + s;
+    if (timerRemaining <= 0) {
+      clearInterval(timerInterval);
+      document.getElementById('timerDisplay').textContent = '00:00';
+      document.getElementById('boredModal').classList.add('visible');
+      speak('Hey! You have been driving for a while. Are you bored? Want me to play some music?');
+    }
+  }, 1000);
+}
+
+function dismissBored() {
+  document.getElementById('boredModal').classList.remove('visible');
+  speak('Okay! Let me know if you need anything.');
+}
+
+// ---- RISK ----
+function calcRisk() {
+  const car = document.getElementById('carType').value;
+  const loc = document.getElementById('locType').value;
+  const speed = parseInt(document.getElementById('carSpeed').value) || 0;
+  const weather = document.getElementById('weatherType').value;
+
+  let score = 10;
+  const factors = [];
+
+  // Speed factor
+  if (speed > 120) { score += 40; factors.push(['Speed ' + speed + ' km/h (Very High)', 'high']); }
+  else if (speed > 80) { score += 20; factors.push(['Speed ' + speed + ' km/h (High)', 'med']); }
+  else if (speed > 50) { score += 8; factors.push(['Speed ' + speed + ' km/h (Moderate)', 'low']); }
+  else { factors.push(['Speed ' + speed + ' km/h (Safe)', 'low']); }
+
+  // Location
+  const locMap = { highway: [5, 'Highway'], city: [15, 'City Traffic'], ghat: [35, 'Ghat / Mountain'], rain: [25, 'Wet Road'], night: [20, 'Night Drive'] };
+  const [ls, ll] = locMap[loc];
+  score += ls; factors.push([ll + ' road conditions', ls > 20 ? 'high' : ls > 10 ? 'med' : 'low']);
+
+  // Car type
+  const carMap = { sedan: [0, 'low'], suv: [-5, 'low'], hatchback: [5, 'low'], truck: [10, 'med'], sports: [15, 'med'] };
+  const [cs, cl] = carMap[car];
+  score += cs; factors.push([car.charAt(0).toUpperCase() + car.slice(1) + ' handling', cl]);
+
+  // Weather
+  const wMap = { clear: [0, 'low'], rain: [20, 'high'], fog: [25, 'high'], night: [12, 'med'] };
+  const [ws, wl] = wMap[weather];
+  score += ws; factors.push([weather.charAt(0).toUpperCase() + weather.slice(1) + ' weather visibility', wl]);
+
+  score = Math.min(100, Math.max(5, score));
+
+  const riskBar = document.getElementById('riskBar');
+  const riskScore = document.getElementById('riskScore');
+  const riskDesc = document.getElementById('riskDesc');
+
+  riskBar.style.width = score + '%';
+  riskScore.textContent = score;
+
+  if (score < 30) { riskBar.style.background = '#00ff9d'; riskScore.style.color = '#00ff9d'; riskDesc.textContent = 'Low Risk — Drive Safely'; }
+  else if (score < 55) { riskBar.style.background = '#ffb800'; riskScore.style.color = '#ffb800'; riskDesc.textContent = 'Moderate Risk — Stay Alert'; }
+  else if (score < 75) { riskBar.style.background = '#ff7c3d'; riskScore.style.color = '#ff7c3d'; riskDesc.textContent = 'High Risk — Reduce Speed'; }
+  else { riskBar.style.background = '#ff3d3d'; riskScore.style.color = '#ff3d3d'; riskDesc.textContent = '⚠️ Critical Risk — Stop If Possible'; speak('Warning! Critical risk level detected. Please reduce speed and drive with extreme caution.'); }
+
+  const rf = document.getElementById('riskFactors');
+  rf.innerHTML = factors.map(([label, lvl]) =>
+    `<div class="risk-factor"><span>${label}</span><span class="badge badge-${lvl}">${lvl.toUpperCase()}</span></div>`
+  ).join('');
+}
+calcRisk();
+
+// ---- DROWSINESS ----
+let cameraActive = false;
+let videoStream = null;
+let drowsySeconds = 0;
+let drowsyInterval = null;
+let lastDrowsySpeak = 0;
+
+async function toggleCamera() {
+  if (cameraActive) {
+    stopCamera();
+  } else {
+    await startCamera();
+  }
+}
+
+async function startCamera() {
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error('Not supported');
+    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    const video = document.getElementById('videoFeed');
+    video.srcObject = videoStream;
+    video.style.display = 'block';
+    document.getElementById('camNoSupport').style.display = 'none';
+    document.getElementById('camStatusText').textContent = 'CAMERA ACTIVE';
+    cameraActive = true;
+    simulateDrowsiness();
+  } catch(e) {
+    document.getElementById('videoFeed').style.display = 'none';
+    document.getElementById('camNoSupport').style.display = 'flex';
+    document.getElementById('camStatusText').textContent = 'NO ACCESS';
+    document.getElementById('camStatusDot').style.background = 'var(--danger)';
+  }
+}
+
+function stopCamera() {
+  if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+  document.getElementById('videoFeed').srcObject = null;
+  cameraActive = false;
+  if (drowsyInterval) clearInterval(drowsyInterval);
+  document.getElementById('camStatusText').textContent = 'OFFLINE';
+  document.getElementById('camStatusDot').style.background = 'var(--muted)';
+  document.getElementById('drowsyAlert').classList.remove('visible');
+}
+
+function simulateDrowsiness() {
+  let tick = 0;
+  drowsyInterval = setInterval(() => {
+    tick++;
+    // Simulate eye open % fluctuating
+    const eyeOpenBase = 85 + Math.sin(tick * 0.15) * 10 + (Math.random() * 6 - 3);
+    const eyeOpen = Math.round(Math.max(30, Math.min(100, eyeOpenBase)));
+    const blink = Math.round(12 + Math.sin(tick * 0.2) * 4);
+    document.getElementById('blinkRate').textContent = blink;
+    document.getElementById('eyeOpen').textContent = eyeOpen + '%';
+
+    const isDrowsy = eyeOpen < 60;
+    if (isDrowsy) {
+      drowsySeconds++;
+      document.getElementById('alertLevel').textContent = 'DROWSY';
+      document.getElementById('alertLevel').style.color = 'var(--danger)';
+      document.getElementById('drowsyAlert').classList.add('visible');
+      const now = Date.now();
+      if (drowsySeconds === 1 && now - lastDrowsySpeak > 8000) {
+        speak('Warning! Drowsiness detected. Please stay alert.');
+        lastDrowsySpeak = now;
+      }
+      if (drowsySeconds >= 6 && now - lastDrowsySpeak > 8000) {
+        speak('You are sleepy. Please take a break immediately for your safety.');
+        lastDrowsySpeak = now;
+        drowsySeconds = 0;
+      }
+    } else {
+      drowsySeconds = 0;
+      document.getElementById('alertLevel').textContent = 'ALERT';
+      document.getElementById('alertLevel').style.color = 'var(--accent2)';
+      document.getElementById('drowsyAlert').classList.remove('visible');
+    }
+  }, 1000);
+}
+
+function speakDrowsy() { speak('You are sleepy. Please take a break immediately for your safety.'); }
+
+// ---- AI CHAT ----
+const CHAT_SYSTEM = `You are SmartDrive AI, an in-car assistant for Indian drivers. 
+You know about Indian cities, roads, weather, food, and travel. 
+Keep answers concise and practical — suitable for someone driving. 
+For weather, give the current season estimate. For trips, give day-by-day itinerary. 
+For cafes/food, give top 3-5 with location. Use short paragraphs. 
+Always be helpful, warm and safety-conscious.`;
+
+let chatHistory = [];
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  appendMsg(msg, 'user');
+  chatHistory.push({ role: 'user', content: msg });
+  const typing = appendTyping();
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: CHAT_SYSTEM,
+        messages: chatHistory
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.map(c => c.text || '').join('') || 'Sorry, I could not get a response.';
+    typing.remove();
+    appendMsg(reply, 'ai');
+    chatHistory.push({ role: 'assistant', content: reply });
+  } catch(e) {
+    typing.remove();
+    appendMsg('Network error. Please check your connection.', 'ai');
+  }
+}
+
+function sendQuick(text) {
+  document.getElementById('chatInput').value = text;
+  sendChat();
+}
+
+function appendMsg(text, role) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  if (role === 'ai') div.innerHTML = '<div class="msg-name">SMARTDRIVE AI</div>' + text.replace(/\n/g, '<br>');
+  else div.textContent = text;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.innerHTML = '<div class="msg-name">SMARTDRIVE AI</div><div class="typing"><span></span><span></span><span></span></div>';
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return div;
+}
+
+// Init chat greeting
+appendMsg('Hello! I\'m your SmartDrive AI. Ask me about weather, plan a trip, find cafes, get driving tips, and more. How can I help you today? 🚗', 'ai');
+
+// Auto-start camera attempt
+window.addEventListener('load', () => setTimeout(startCamera, 800));
+</script>
+</body>
+</html>
